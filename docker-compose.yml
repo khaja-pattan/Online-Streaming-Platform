@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build:
+      context: ./backend
+      dockerfile: eureka-server/Dockerfile
+    container_name: streamflix-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - streamflix-network
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: streamflix-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - JWT_SECRET=${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    depends_on:
+      - eureka-server
+    networks:
+      - streamflix-network
+
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: user-service/Dockerfile
+    container_name: streamflix-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=${SUPABASE_JDBC_URL:-jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require}
+      - SPRING_DATASOURCE_USERNAME=${SUPABASE_DB_USER:-postgres.ermxmicincezjacgfdhy}
+      - SPRING_DATASOURCE_PASSWORD=${SUPABASE_DB_PASSWORD:-Coco100.com}
+      - JWT_SECRET=${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    depends_on:
+      - eureka-server
+    networks:
+      - streamflix-network
+
+  movie-catalog-service:
+    build:
+      context: ./backend
+      dockerfile: movie-catalog-service/Dockerfile
+    container_name: streamflix-movie-catalog
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=${SUPABASE_JDBC_URL:-jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require}
+      - SPRING_DATASOURCE_USERNAME=${SUPABASE_DB_USER:-postgres.ermxmicincezjacgfdhy}
+      - SPRING_DATASOURCE_PASSWORD=${SUPABASE_DB_PASSWORD:-Coco100.com}
+    depends_on:
+      - eureka-server
+    networks:
+      - streamflix-network
+
+  watchlist-service:
+    build:
+      context: ./backend
+      dockerfile: watchlist-service/Dockerfile
+    container_name: streamflix-watchlist-service
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=${SUPABASE_JDBC_URL:-jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require}
+      - SPRING_DATASOURCE_USERNAME=${SUPABASE_DB_USER:-postgres.ermxmicincezjacgfdhy}
+      - SPRING_DATASOURCE_PASSWORD=${SUPABASE_DB_PASSWORD:-Coco100.com}
+    depends_on:
+      - eureka-server
+    networks:
+      - streamflix-network
+
+  recommendation-service:
+    build:
+      context: ./backend
+      dockerfile: recommendation-service/Dockerfile
+    container_name: streamflix-recommendation-service
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+    networks:
+      - streamflix-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: streamflix-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - streamflix-network
+
+networks:
+  streamflix-network:
+    driver: bridge
